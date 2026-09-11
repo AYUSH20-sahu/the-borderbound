@@ -26,7 +26,7 @@ interface StatusResult {
   applicantMasked: string;
 }
 
-export default function StatusPage() {
+function StatusContent() {
   const searchParams = useSearchParams();
   const initialEmail = searchParams.get("email") || "";
 
@@ -215,5 +215,22 @@ export default function StatusPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function StatusPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center min-h-[60vh] py-16 px-4">
+          <div className="w-8 h-8 rounded-full border-2 border-red-500 border-t-transparent animate-spin mb-4" />
+          <p className="text-xs font-mono text-slate-400 uppercase tracking-widest">
+            Loading Audition Telemetry...
+          </p>
+        </div>
+      }
+    >
+      <StatusContent />
+    </React.Suspense>
   );
 }

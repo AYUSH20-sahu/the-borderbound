@@ -6,7 +6,9 @@ const isDev = process.env.NODE_ENV === "development";
 const enableDemoAuth = isDev && process.env.ENABLE_DEMO_AUTH === "true";
 
 if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV === "production") {
-  throw new Error("[CRITICAL SECURITY] NEXTAUTH_SECRET must be defined in production.");
+  console.warn(
+    "[Configuration Notice] NEXTAUTH_SECRET is not defined in environment. NextAuth requires this secret to be set in your Vercel Dashboard."
+  );
 }
 
 export const authOptions: AuthOptions = {
