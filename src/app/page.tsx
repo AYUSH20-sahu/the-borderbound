@@ -15,6 +15,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import CountdownTimer from "@/components/ui/CountdownTimer";
+import TrailerSection from "@/components/home/TrailerSection";
+import SocialFeedSection from "@/components/home/SocialFeedSection";
 
 export default function HomePage() {
   return (
@@ -372,6 +374,12 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* 3.6 OFFICIAL TRAILER SECTION */}
+      <TrailerSection />
+
+      {/* 3.7 SOCIAL CHANNELS & MULTI-PLATFORM GRID */}
+      <SocialFeedSection />
 
       {/* 4. AUDITION CALLOUT BANNER */}
       <section className="relative py-20 px-4 sm:px-6 lg:px-8">

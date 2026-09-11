@@ -79,9 +79,9 @@ the-borderbound/
 
 ---
 
-## 🏆 Current Progress
-- [x] **Phase 1 — Foundation**: Design system, layout, Home, About, and Rules pages.
+## 🏆 Current Progress — All 5 Phases Complete!
+- [x] **Phase 1 — Foundation**: Cinematic design system, layout, Home, About, and Rules pages.
 - [x] **Phase 2 — Contestants Gallery**: Complete 32-player dataset across 4 sectors, search & sector filters, archetype filters, sort controls, and detailed tactical dossier modal.
-- [ ] **Next Up: Phase 3 — Application System**: Multi-step registration form, Google auth, file upload pipeline, and DB schema for applications.
-- [ ] **Phase 4 — Admin Dashboard**: Admin auth, application list/table, status management, basic analytics.
-- [ ] **Phase 5 — Polish**: Social/YouTube embeds, contact form, analytics, performance optimization.
+- [x] **Phase 3 — Application System**: Multi-step registration form (Personal details, Media audition dropzones, Strategy/Lore pitch, Google verification gate), Cloudinary upload pipeline, free-tier rate limiter, Mongoose application schema & status lookup API.
+- [x] **Phase 4 — Admin Dashboard**: Secure JWT staff authentication (`jose`), application review table with search/filters, in-depth candidate dossier inspection drawer (photo, video audition player, contact info, strategy), live status updater with internal producer notes, conversion funnel analytics, and one-click CSV export.
+- [x] **Phase 5 — Polish & Integrations**: Playable concept trailer section, multi-channel social wall (YouTube, Instagram, TikTok, X), sponsorship & contact form (`/contact`), terms & privacy transparent free-tier disclosure, JSON-LD structured data, robots.txt, and sitemap.xml.

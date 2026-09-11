@@ -61,6 +61,27 @@ export default function RootLayout({
 
         {/* Global Footer */}
         <Footer />
+
+        {/* Structured Data (JSON-LD) for SEO */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "TVSeries",
+              name: "The Borderbound",
+              description:
+                "32 contestants marooned across 4 extreme frontiers in an unscripted reality survival & strategy tournament for a $1,000,000 prize.",
+              genre: ["Reality-TV", "Survival", "Competition", "Game Show"],
+              numberOfSeasons: 1,
+              numberOfEpisodes: 12,
+              productionCompany: {
+                "@type": "Organization",
+                name: "The Borderbound Productions Inc.",
+              },
+            }),
+          }}
+        />
       </body>
     </html>
   );
