@@ -76,12 +76,14 @@ export async function POST(request: NextRequest) {
     const data = validated.data;
 
     // 3.5 Verify reCAPTCHA token if configured (P1.4)
-    const recaptcha = await verifyRecaptchaToken(data.recaptchaToken);
-    if (!recaptcha.valid) {
-      return NextResponse.json(
-        { error: `Anti-bot security verification failed: ${recaptcha.reason}` },
-        { status: 400 }
-      );
+    if (data.recaptchaToken) {
+      const recaptcha = await verifyRecaptchaToken(data.recaptchaToken);
+      if (!recaptcha.success) {
+        return NextResponse.json(
+          { error: `Anti-bot security verification failed: ${recaptcha.error || "Invalid bot score"}` },
+          { status: 400 }
+        );
+      }
     }
 
     // 4. Connect to Database (P0.5: Fail closed, no silent ephemeral memory storage)

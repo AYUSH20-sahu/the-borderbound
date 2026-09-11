@@ -97,11 +97,11 @@ export async function authenticateAdminRequest(request?: NextRequest): Promise<A
  */
 export function verifyAdminCredentials(email: string, pass: string): { valid: boolean; role: AdminRole } {
   const configuredEmail = process.env.ADMIN_EMAIL;
-  const configuredPass = process.env.ADMIN_PASSWORD;
+  const configuredPass = process.env.ADMIN_PASSWORD || process.env.ADMIN_PASSWORD_HASH;
 
   if (!configuredEmail || !configuredPass) {
     throw new Error(
-      "[SECURITY CONFIGURATION] ADMIN_EMAIL and ADMIN_PASSWORD environment variables must be configured in environment."
+      "[SECURITY CONFIGURATION] ADMIN_EMAIL and ADMIN_PASSWORD (or ADMIN_PASSWORD_HASH) environment variables must be configured in environment."
     );
   }
 

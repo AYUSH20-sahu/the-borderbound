@@ -10,6 +10,25 @@ function escapeCSV(val: unknown): string {
   return `"${str}"`;
 }
 
+interface ExportRecord {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  age: number;
+  occupation: string;
+  hometown: string;
+  passport: string;
+  sector: string;
+  archetype: string;
+  status: string;
+  photoUrl: string;
+  videoUrl: string;
+  strategy: string;
+  notes: string;
+  submittedAt: string;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const admin = await authenticateAdminRequest(request);
@@ -25,7 +44,7 @@ export async function GET(request: NextRequest) {
     }
 
     const db = await connectToDatabase();
-    let records = [];
+    let records: ExportRecord[] = [];
 
     if (db) {
       const mongoDocs = await Application.find({}).sort({ createdAt: -1 }).lean();
