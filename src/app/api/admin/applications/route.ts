@@ -1,17 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateAdminRequest } from "@/lib/adminAuth";
+import { authenticateAdminRequest, can } from "@/lib/adminAuth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Application } from "@/models/Application";
 import { INITIAL_APPLICATIONS, AdminApplicationItem } from "@/data/seedApplications";
 
-// In-memory runtime storage for updates during session
-let runtimeApplications: AdminApplicationItem[] = [...INITIAL_APPLICATIONS];
+// Runtime mock storage strictly for development preview
+let devSeedApplications: AdminApplicationItem[] = [...INITIAL_APPLICATIONS];
 
 export async function GET(request: NextRequest) {
   try {
     const admin = await authenticateAdminRequest(request);
     if (!admin) {
       return NextResponse.json({ error: "Unauthorized. Staff session expired." }, { status: 401 });
+    }
+
+    if (!can(admin, "application:read")) {
+      return NextResponse.json({ error: "Forbidden. Insufficient permissions to view applicant data." }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -57,14 +61,20 @@ export async function GET(request: NextRequest) {
           internalNotes: doc.internalNotes || "",
           createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : new Date().toISOString(),
         }));
-      } else {
-        list = [...runtimeApplications];
+      } else if (process.env.NODE_ENV === "development") {
+        list = [...devSeedApplications];
       }
     } else {
-      list = [...runtimeApplications];
+      if (process.env.NODE_ENV === "production") {
+        return NextResponse.json(
+          { error: "Database service unavailable. Cannot load applicant data." },
+          { status: 503 }
+        );
+      }
+      list = [...devSeedApplications];
     }
 
-    // Client-side / in-memory filters
+    // Filter by query
     if (search.trim() !== "") {
       list = list.filter(
         (a) =>
@@ -101,6 +111,10 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized. Staff session expired." }, { status: 401 });
     }
 
+    if (!can(admin, "application:update_status")) {
+      return NextResponse.json({ error: "Forbidden. Insufficient permissions to modify candidate status." }, { status: 403 });
+    }
+
     const { applicationId, status, internalNotes } = await request.json();
 
     if (!applicationId) {
@@ -109,30 +123,44 @@ export async function PATCH(request: NextRequest) {
 
     const db = await connectToDatabase();
 
-    if (db) {
-      const updateData: Record<string, unknown> = {};
-      if (status) updateData.status = status;
-      if (internalNotes !== undefined) updateData.internalNotes = internalNotes;
-      updateData.reviewedBy = admin.email;
+    if (!db) {
+      if (process.env.NODE_ENV === "production") {
+        return NextResponse.json(
+          { error: "Database service unavailable. Status cannot be saved." },
+          { status: 503 }
+        );
+      }
+      // Dev only update in memory
+      devSeedApplications = devSeedApplications.map((app) =>
+        app.applicationId === applicationId
+          ? {
+              ...app,
+              status: status || app.status,
+              internalNotes: internalNotes !== undefined ? internalNotes : app.internalNotes,
+            }
+          : app
+      );
 
-      await Application.findOneAndUpdate({ applicationId }, updateData);
+      return NextResponse.json({
+        success: true,
+        message: `[Development] Application ${applicationId} status updated locally.`,
+      });
     }
 
-    // Update runtime memory record
-    runtimeApplications = runtimeApplications.map((app) => {
-      if (app.applicationId === applicationId) {
-        return {
-          ...app,
-          status: status || app.status,
-          internalNotes: internalNotes !== undefined ? internalNotes : app.internalNotes,
-        };
-      }
-      return app;
-    });
+    const updateData: Record<string, unknown> = {};
+    if (status) updateData.status = status;
+    if (internalNotes !== undefined) updateData.internalNotes = internalNotes;
+    updateData.reviewedBy = admin.email;
+
+    const result = await Application.findOneAndUpdate({ applicationId }, updateData, { new: true });
+
+    if (!result) {
+      return NextResponse.json({ error: "Candidate application record not found." }, { status: 404 });
+    }
 
     return NextResponse.json({
       success: true,
-      message: `Application ${applicationId} status updated successfully.`,
+      message: `Application ${applicationId} status updated successfully to ${status}.`,
     });
   } catch (err: unknown) {
     console.error("Admin status update error:", err);

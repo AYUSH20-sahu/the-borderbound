@@ -3,6 +3,7 @@ import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import SessionProviderWrapper from "@/components/providers/SessionProviderWrapper";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -53,14 +54,16 @@ export default function RootLayout({
           <div className="absolute bottom-0 right-1/4 w-[700px] h-[400px] bg-amber-950/10 blur-[120px] rounded-full" />
         </div>
 
-        {/* Global Navigation */}
-        <Navbar />
+        <SessionProviderWrapper>
+          {/* Global Navigation */}
+          <Navbar />
 
-        {/* Main Content Area */}
-        <main className="flex-1 z-10 pt-20 sm:pt-24">{children}</main>
+          {/* Main Content Area */}
+          <main className="flex-1 z-10 pt-20 sm:pt-24">{children}</main>
 
-        {/* Global Footer */}
-        <Footer />
+          {/* Global Footer */}
+          <Footer />
+        </SessionProviderWrapper>
 
         {/* Structured Data (JSON-LD) for SEO */}
         <script

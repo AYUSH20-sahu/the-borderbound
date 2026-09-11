@@ -2,33 +2,67 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { NextRequest } from "next/server";
 
-const JWT_SECRET_RAW = process.env.ADMIN_JWT_SECRET || "borderbound_admin_secret_key_32_characters_minimum";
-const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_RAW);
-
 export const ADMIN_COOKIE_NAME = "borderbound_admin_token";
+
+export type AdminRole = "producer" | "casting_director" | "viewer";
 
 export interface AdminPayload {
   email: string;
-  role: "producer" | "casting_director";
+  role: AdminRole;
+}
+
+export type Permission =
+  | "application:read"
+  | "application:update_status"
+  | "application:add_notes"
+  | "application:export_csv"
+  | "analytics:view";
+
+/**
+ * Enforces Role-Based Access Control (RBAC)
+ */
+export function can(user: AdminPayload, permission: Permission): boolean {
+  if (user.role === "producer") return true; // Executive Producers have full access
+  if (user.role === "casting_director") {
+    // Casting directors can view, edit status, and notes, but cannot export all CSV data
+    return permission !== "application:export_csv";
+  }
+  if (user.role === "viewer") {
+    return permission === "application:read" || permission === "analytics:view";
+  }
+  return false;
+}
+
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.ADMIN_JWT_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error(
+      "[SECURITY CONFIGURATION] ADMIN_JWT_SECRET environment variable must be set with at least 32 characters."
+    );
+  }
+  return new TextEncoder().encode(secret);
 }
 
 /**
- * Creates an encrypted JWT token with 8-hour expiration
+ * Creates a signed JWT token (HS256) with 8-hour expiration.
+ * Note: Payload is cryptographically signed, not encrypted.
  */
 export async function signAdminToken(payload: AdminPayload): Promise<string> {
+  const secret = getJwtSecret();
   return new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("8h")
-    .sign(JWT_SECRET);
+    .sign(secret);
 }
 
 /**
- * Verifies a JWT token
+ * Verifies a signed JWT token
  */
 export async function verifyAdminToken(token: string): Promise<AdminPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const secret = getJwtSecret();
+    const { payload } = await jwtVerify(token, secret);
     return payload as unknown as AdminPayload;
   } catch {
     return null;
@@ -58,14 +92,22 @@ export async function authenticateAdminRequest(request?: NextRequest): Promise<A
 }
 
 /**
- * Verifies staff email and password
+ * Verifies staff email and password.
+ * Fails closed if environment variables are not configured.
  */
-export function verifyAdminCredentials(email: string, pass: string): boolean {
-  const configuredEmail = process.env.ADMIN_EMAIL || "admin@borderbound.show";
-  const configuredPass = process.env.ADMIN_PASSWORD || "borderbound2026!";
+export function verifyAdminCredentials(email: string, pass: string): { valid: boolean; role: AdminRole } {
+  const configuredEmail = process.env.ADMIN_EMAIL;
+  const configuredPass = process.env.ADMIN_PASSWORD;
 
-  return (
+  if (!configuredEmail || !configuredPass) {
+    throw new Error(
+      "[SECURITY CONFIGURATION] ADMIN_EMAIL and ADMIN_PASSWORD environment variables must be configured in environment."
+    );
+  }
+
+  const isMatch =
     email.trim().toLowerCase() === configuredEmail.trim().toLowerCase() &&
-    pass === configuredPass
-  );
+    pass === configuredPass;
+
+  return { valid: isMatch, role: "producer" };
 }

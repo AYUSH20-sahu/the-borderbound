@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import crypto from "crypto";
+import { connectToDatabase } from "@/lib/mongodb";
+import { ContactInquiry } from "@/models/ContactInquiry";
 import { checkRateLimit } from "@/lib/rateLimit";
+import { verifyRecaptchaToken } from "@/lib/recaptcha";
 
 const ContactSchema = z.object({
   fullName: z.string().min(2, "Full name required").max(100),
@@ -14,10 +18,8 @@ const ContactSchema = z.object({
     "general",
   ]),
   message: z.string().min(10, "Message must be at least 10 characters").max(3000),
+  recaptchaToken: z.string().optional(),
 });
-
-// In-memory inquiry store for demo/development
-const contactInquiries: Array<Record<string, unknown>> = [];
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,26 +43,48 @@ export async function POST(request: NextRequest) {
     }
 
     const data = validated.data;
-    const inquiryId = `INQ-${Date.now().toString().slice(-6)}`;
 
-    const record = {
+    // 2.5 Server-Side reCAPTCHA Verification (P1.4)
+    if (data.recaptchaToken) {
+      const captchaResult = await verifyRecaptchaToken(data.recaptchaToken);
+      if (!captchaResult.success) {
+        return NextResponse.json(
+          { error: captchaResult.error || "Bot verification failed." },
+          { status: 403 }
+        );
+      }
+    }
+
+    const inquiryId = `INQ-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+
+    // 3. Connect to Database & Persist (Fail-closed)
+    const db = await connectToDatabase();
+    if (!db) {
+      return NextResponse.json(
+        { error: "Communication database is temporarily offline. Please retry your inquiry shortly." },
+        { status: 503 }
+      );
+    }
+
+    await ContactInquiry.create({
       inquiryId,
-      ...data,
-      receivedAt: new Date().toISOString(),
-    };
-
-    contactInquiries.push(record);
-    console.log(`[Contact] New inquiry received [${inquiryId}]: ${data.category} from ${data.email}`);
+      fullName: data.fullName,
+      email: data.email.toLowerCase().trim(),
+      organization: data.organization?.trim() || "",
+      category: data.category,
+      message: data.message,
+      status: "new",
+    });
 
     return NextResponse.json({
       success: true,
       inquiryId,
-      message: "Your inquiry has been routed to The Borderbound executive team.",
+      message: "Your inquiry has been recorded and queued for executive review.",
     });
   } catch (err: unknown) {
     console.error("Contact API error:", err);
     return NextResponse.json(
-      { error: "Failed to process transmission. Please try again." },
+      { error: "Failed to process inquiry. Please try again." },
       { status: 500 }
     );
   }

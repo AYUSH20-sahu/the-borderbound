@@ -1,4 +1,4 @@
-"useclient";
+"use client";
 
 import React, { useState } from "react";
 import { Play, X, Film, Volume2, Shield, Flame } from "lucide-react";

@@ -1,7 +1,8 @@
-"useclient";
+"use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSession, signIn, signOut } from "next-auth/react";
 import {
   User,
   Video,
@@ -68,6 +69,7 @@ const INITIAL_FORM: FormData = {
 };
 
 export default function ApplicationWizard() {
+  const { data: session } = useSession();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
@@ -80,6 +82,18 @@ export default function ApplicationWizard() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [submittedId, setSubmittedId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState(false);
+
+  // Sync authenticated session with application form
+  useEffect(() => {
+    if (session?.user?.email) {
+      setForm((prev) => ({
+        ...prev,
+        email: session.user?.email || prev.email,
+        fullName: prev.fullName || session.user?.name || "",
+        googleVerified: true,
+      }));
+    }
+  }, [session]);
 
   // Field change
   const handleChange = (
@@ -209,8 +223,8 @@ export default function ApplicationWizard() {
     }
 
     if (currentStep === 4) {
-      if (!form.googleVerified) {
-        setErrorMsg("Please verify your account via Google Sign-In to prevent duplicate submissions.");
+      if (!session?.user?.email && !form.googleVerified) {
+        setErrorMsg("Please sign in with your Google account before submitting your application.");
         return false;
       }
       if (!form.termsAgreed) {
@@ -283,7 +297,7 @@ export default function ApplicationWizard() {
           Audition Dossier Received!
         </h2>
         <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
-          Your Season 1 audition has been encrypted and submitted to the casting producers. Save your official Application ID to monitor review updates.
+          Your Season 1 audition has been durably recorded and submitted to the casting producers. Save your official Application ID to monitor review updates.
         </p>
 
         {/* Application ID Card */}
@@ -755,18 +769,27 @@ export default function ApplicationWizard() {
               Requires an authenticated Google account to bind with this audition. This guarantees that each applicant submits exactly once.
             </p>
 
-            {form.googleVerified ? (
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-mono">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Verified with Google: {form.email}</span>
+            {session?.user?.email ? (
+              <div className="flex flex-col items-center gap-2">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-mono">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Verified Google Account: {session.user.email}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => signOut()}
+                  className="text-xs text-slate-400 hover:text-slate-200 underline font-mono mt-1"
+                >
+                  Switch Account
+                </button>
               </div>
             ) : (
               <button
                 type="button"
-                onClick={() => setForm((prev) => ({ ...prev, googleVerified: true }))}
+                onClick={() => signIn(undefined, { callbackUrl: "/apply" })}
                 className="px-6 py-3 rounded-xl bg-white text-black hover:bg-slate-200 font-bold text-xs uppercase tracking-wider transition-colors shadow-lg"
               >
-                Verify With Google Account
+                Sign In with Google Account
               </button>
             )}
           </div>

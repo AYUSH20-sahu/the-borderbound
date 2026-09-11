@@ -1,4 +1,4 @@
-"useclient";
+"use client";
 
 import React, { useState, useMemo } from "react";
 import { CONTESTANTS_DATA } from "@/data/contestants";

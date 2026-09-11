@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { authenticateAdminRequest } from "@/lib/adminAuth";
+import { authenticateAdminRequest, can } from "@/lib/adminAuth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Application } from "@/models/Application";
 import { INITIAL_APPLICATIONS } from "@/data/seedApplications";
@@ -15,6 +15,13 @@ export async function GET(request: NextRequest) {
     const admin = await authenticateAdminRequest(request);
     if (!admin) {
       return NextResponse.json({ error: "Unauthorized. Staff session required." }, { status: 401 });
+    }
+
+    if (!can(admin, "application:export_csv")) {
+      return NextResponse.json(
+        { error: "Forbidden. Exporting candidate data requires Executive Producer permissions." },
+        { status: 403 }
+      );
     }
 
     const db = await connectToDatabase();
@@ -41,7 +48,7 @@ export async function GET(request: NextRequest) {
           notes: d.internalNotes || "",
           submittedAt: d.createdAt ? new Date(d.createdAt).toISOString() : "",
         }));
-      } else {
+      } else if (process.env.NODE_ENV === "development") {
         records = INITIAL_APPLICATIONS.map((d) => ({
           id: d.applicationId,
           name: d.applicant.fullName,
@@ -62,6 +69,12 @@ export async function GET(request: NextRequest) {
         }));
       }
     } else {
+      if (process.env.NODE_ENV === "production") {
+        return NextResponse.json(
+          { error: "Database storage service is temporarily unavailable." },
+          { status: 503 }
+        );
+      }
       records = INITIAL_APPLICATIONS.map((d) => ({
         id: d.applicationId,
         name: d.applicant.fullName,

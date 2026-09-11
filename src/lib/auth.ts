@@ -2,9 +2,16 @@ import { AuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 
+const isDev = process.env.NODE_ENV === "development";
+const enableDemoAuth = isDev && process.env.ENABLE_DEMO_AUTH === "true";
+
+if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error("[CRITICAL SECURITY] NEXTAUTH_SECRET must be defined in production.");
+}
+
 export const authOptions: AuthOptions = {
   providers: [
-    // 1. Google OAuth Provider (Free - Google Cloud Console)
+    // 1. Production Google OAuth Provider (Free - Google Cloud Console)
     ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
       ? [
           GoogleProvider({
@@ -14,24 +21,28 @@ export const authOptions: AuthOptions = {
         ]
       : []),
 
-    // 2. Verified Contestant Google Demo Auth (allows seamless local testing before setting Google API keys)
-    CredentialsProvider({
-      id: "google-demo",
-      name: "Google Account Demo Verification",
-      credentials: {
-        email: { label: "Google Email", type: "email", placeholder: "applicant@gmail.com" },
-        name: { label: "Full Name", type: "text", placeholder: "Alex Chen" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.name) return null;
-        return {
-          id: `demo_${Date.now()}`,
-          name: credentials.name,
-          email: credentials.email.toLowerCase(),
-          image: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80",
-        };
-      },
-    }),
+    // 2. Development-Only Demo Verification (Disabled completely in production)
+    ...(enableDemoAuth
+      ? [
+          CredentialsProvider({
+            id: "google-demo",
+            name: "Google Account Demo Verification (Development Only)",
+            credentials: {
+              email: { label: "Google Email", type: "email", placeholder: "applicant@gmail.com" },
+              name: { label: "Full Name", type: "text", placeholder: "Alex Chen" },
+            },
+            async authorize(credentials) {
+              if (!credentials?.email || !credentials?.name) return null;
+              return {
+                id: `demo_${Date.now()}`,
+                name: credentials.name,
+                email: credentials.email.toLowerCase(),
+                image: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120&auto=format&fit=crop&q=80",
+              };
+            },
+          }),
+        ]
+      : []),
   ],
   session: {
     strategy: "jwt",
@@ -51,5 +62,5 @@ export const authOptions: AuthOptions = {
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || "borderbound_jwt_secret_dev_32characters",
+  secret: process.env.NEXTAUTH_SECRET || "borderbound_dev_secret_32_characters_minimum",
 };

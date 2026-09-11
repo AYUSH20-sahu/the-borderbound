@@ -23,26 +23,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const isValid = verifyAdminCredentials(email, password);
+    const { valid, role } = verifyAdminCredentials(email, password);
 
-    if (!isValid) {
+    if (!valid) {
       return NextResponse.json(
         { error: "Invalid staff credentials. Access denied." },
         { status: 401 }
       );
     }
 
-    // 2. Issue JWT Token
+    // 2. Issue Signed JWT Token with actual verified role
     const token = await signAdminToken({
       email: email.toLowerCase(),
-      role: "producer",
+      role,
     });
 
     const response = NextResponse.json({
       success: true,
       user: {
         email: email.toLowerCase(),
-        role: "producer",
+        role,
       },
       message: "Admin session authenticated successfully.",
     });
