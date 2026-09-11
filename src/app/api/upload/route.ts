@@ -31,15 +31,20 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
+    const allowedImageExts: readonly string[] = UPLOAD_LIMITS.ALLOWED_IMAGE_EXTENSIONS;
+    const allowedImageMimes: readonly string[] = UPLOAD_LIMITS.ALLOWED_IMAGE_MIMES;
+    const allowedVideoExts: readonly string[] = UPLOAD_LIMITS.ALLOWED_VIDEO_EXTENSIONS;
+    const allowedVideoMimes: readonly string[] = UPLOAD_LIMITS.ALLOWED_VIDEO_MIMES;
+
     if (fileType === "photo") {
       // Validate Extension & MIME
-      if (!UPLOAD_LIMITS.ALLOWED_IMAGE_EXTENSIONS.includes(fileExt as any)) {
+      if (!allowedImageExts.includes(fileExt)) {
         return NextResponse.json(
           { error: `Invalid image extension '${fileExt}'. Allowed extensions: ${UPLOAD_LIMITS.ALLOWED_IMAGE_EXTENSIONS.join(", ")}` },
           { status: 400 }
         );
       }
-      if (!UPLOAD_LIMITS.ALLOWED_IMAGE_MIMES.includes(file.type as any)) {
+      if (!allowedImageMimes.includes(file.type)) {
         return NextResponse.json(
           { error: "Invalid image MIME format. Only JPG, PNG, and WebP images are permitted." },
           { status: 400 }
@@ -63,13 +68,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, ...result });
     } else {
       // Video Validation
-      if (!UPLOAD_LIMITS.ALLOWED_VIDEO_EXTENSIONS.includes(fileExt as any)) {
+      if (!allowedVideoExts.includes(fileExt)) {
         return NextResponse.json(
           { error: `Invalid video format. Allowed extensions: ${UPLOAD_LIMITS.ALLOWED_VIDEO_EXTENSIONS.join(", ")}` },
           { status: 400 }
         );
       }
-      if (!UPLOAD_LIMITS.ALLOWED_VIDEO_MIMES.includes(file.type as any)) {
+      if (!allowedVideoMimes.includes(file.type)) {
         return NextResponse.json(
           { error: "Invalid video MIME format. Accepted formats: MP4, WebM, and MOV." },
           { status: 400 }
