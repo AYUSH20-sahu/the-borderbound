@@ -89,15 +89,25 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Col 4: Platform & Admin */}
+          {/* Col 4: Platform & Staff */}
           <div className="flex flex-col gap-3">
-            <h4 className="text-xs font-mono uppercase tracking-widest text-slate-300 font-semibold">
-              Platform
+            <h4 className="text-xs font-mono uppercase tracking-widest text-slate-300 font-semibold flex items-center gap-1.5">
+              <Shield className="w-3.5 h-3.5 text-red-500" />
+              <span>Platform & Staff</span>
             </h4>
-            <ul className="flex flex-col gap-2 text-sm text-slate-400">
+            <ul className="flex flex-col gap-2.5 text-sm text-slate-400">
               <li>
-                <Link href="/admin/login" className="hover:text-slate-200 transition-colors flex items-center gap-1">
-                  <span>Producer Portal</span>
+                <Link
+                  href="/admin/login"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-600/15 hover:bg-red-600/25 border border-red-500/30 text-red-300 hover:text-white transition-all text-xs font-mono uppercase tracking-wider group"
+                >
+                  <ExternalLink className="w-3 h-3 text-red-400 group-hover:scale-110 transition-transform" />
+                  <span>Staff Portal (Admin Login)</span>
+                </Link>
+              </li>
+              <li>
+                <Link href="/admin/dashboard" className="hover:text-slate-200 transition-colors flex items-center gap-1 text-xs font-mono">
+                  <span>Producer Dashboard</span>
                   <ExternalLink className="w-3 h-3 opacity-60" />
                 </Link>
               </li>
@@ -128,6 +138,9 @@ export default function Footer() {
             </Link>
             <Link href="/rules" className="hover:text-slate-400 transition-colors">
               Contestant Waiver
+            </Link>
+            <Link href="/admin/login" className="text-slate-500 hover:text-red-400 transition-colors font-bold">
+              Staff Portal
             </Link>
           </div>
         </div>

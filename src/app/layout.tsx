@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import AppLayoutShell from "@/components/layout/AppLayoutShell";
 import SessionProviderWrapper from "@/components/providers/SessionProviderWrapper";
 
 const inter = Inter({
@@ -55,14 +54,7 @@ export default function RootLayout({
         </div>
 
         <SessionProviderWrapper>
-          {/* Global Navigation */}
-          <Navbar />
-
-          {/* Main Content Area */}
-          <main className="flex-1 z-10 pt-20 sm:pt-24">{children}</main>
-
-          {/* Global Footer */}
-          <Footer />
+          <AppLayoutShell>{children}</AppLayoutShell>
         </SessionProviderWrapper>
 
         {/* Structured Data (JSON-LD) for SEO */}
